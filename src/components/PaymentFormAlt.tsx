@@ -526,10 +526,15 @@ export default function PaymentFormAlt() {
                     <div className="text-center mb-6">
                       <p className="text-sm text-gray-600 mb-1">Montant à payer</p>
                       <p className="text-4xl font-bold text-gray-900">
-                        {isValidated && amount ? `${amount},00 €` : '35,00 €'}
+                        {getAllValidated() ? `${getTotalAmount()},00 €` : '35,00 €'}
                       </p>
-                      {!isValidated && (
+                      {!getAllValidated() && (
                         <p className="text-xs text-gray-500 mt-1">Exemple de montant</p>
+                      )}
+                      {fpsList.filter(fps => fps.isValidated).length > 0 && !getAllValidated() && (
+                        <p className="text-xs text-blue-600 mt-1">
+                          {fpsList.filter(fps => fps.isValidated).length} FPS validé{fpsList.filter(fps => fps.isValidated).length > 1 ? 's' : ''} sur {fpsList.length}
+                        </p>
                       )}
                     </div>
 
@@ -540,11 +545,11 @@ export default function PaymentFormAlt() {
                       </label>
                       {paymentOptions.map((option) => {
                         const Icon = option.icon;
-                        const isSelected = isValidated && paymentMethod === option.id;
-                        const baseAmount = isValidated && amount ? amount : 35; // Exemple de montant
+                        const isSelected = getAllValidated() && paymentMethod === option.id;
+                        const baseAmount = getAllValidated() ? getTotalAmount() : 35; // Exemple de montant
                         const totalWithFees = calculateTotalWithFees(baseAmount, option.id);
                         const serviceFees = totalWithFees - baseAmount;
-                        const isDisabled = !isValidated;
+                        const isDisabled = !getAllValidated();
                         
                         return (
                           <label
@@ -560,7 +565,7 @@ export default function PaymentFormAlt() {
                               name="payment-method"
                               value={option.id}
                               checked={isSelected}
-                              onChange={() => isValidated && setPaymentMethod(option.id)}
+                              onChange={() => getAllValidated() && setPaymentMethod(option.id)}
                               disabled={isDisabled}
                               className="sr-only"
                             />
@@ -609,7 +614,7 @@ export default function PaymentFormAlt() {
                             </div>
                             
                             {/* Payment breakdown for selected option */}
-                            {isValidated && paymentMethod === option.id && option.id === 'deferred' && (
+                            {getAllValidated() && paymentMethod === option.id && option.id === 'deferred' && (
                               <div className="mt-3 pt-3 border-t border-gray-200 space-y-2 text-sm">
                                 <div className="flex justify-between text-gray-600">
                                   <span>Maintenant</span>
@@ -624,7 +629,7 @@ export default function PaymentFormAlt() {
                                 </div>
                               </div>
                             )}
-                            {isValidated && paymentMethod === option.id && option.id === 'split3' && (
+                            {getAllValidated() && paymentMethod === option.id && option.id === 'split3' && (
                               <div className="mt-3 pt-3 border-t border-gray-200 space-y-2 text-sm">
                                 <div className="flex justify-between text-gray-600">
                                   <span>1× Maintenant</span>
@@ -648,8 +653,8 @@ export default function PaymentFormAlt() {
                     {/* Détail du paiement */}
                     <div className="space-y-3 text-sm mb-6 bg-gray-50 p-4 rounded-lg">
                       {(() => {
-                        const baseAmount = isValidated && amount ? amount : 35;
-                        const currentMethod = isValidated ? paymentMethod : 'deferred'; // Montrer l'exemple avec le différé
+                        const baseAmount = getAllValidated() ? getTotalAmount() : 35;
+                        const currentMethod = getAllValidated() ? paymentMethod : 'immediate'; // Montrer l'exemple avec l'immédiat
                         const totalWithFees = calculateTotalWithFees(baseAmount, currentMethod);
                         const serviceFees = totalWithFees - baseAmount;
                         
@@ -657,25 +662,25 @@ export default function PaymentFormAlt() {
                           <>
                             <div className="flex justify-between">
                               <span className="text-gray-600">Montant FPS:</span>
-                              <span className={`font-semibold ${!isValidated ? 'text-gray-500' : ''}`}>
+                              <span className={`font-semibold ${!getAllValidated() ? 'text-gray-500' : ''}`}>
                                 {baseAmount},00 €
                               </span>
                             </div>
                             {serviceFees > 0 && (
                               <div className="flex justify-between">
                                 <span className="text-gray-600">Frais de service:</span>
-                                <span className={`font-semibold ${!isValidated ? 'text-gray-500' : ''}`}>
+                                <span className={`font-semibold ${!getAllValidated() ? 'text-gray-500' : ''}`}>
                                   {serviceFees},00 €
                                 </span>
                               </div>
                             )}
                             <div className="flex justify-between font-bold text-lg border-t pt-2">
-                              <span className={!isValidated ? 'text-gray-500' : ''}>Total:</span>
-                              <span className={!isValidated ? 'text-gray-500' : ''}>{totalWithFees},00 €</span>
+                              <span className={!getAllValidated() ? 'text-gray-500' : ''}>Total:</span>
+                              <span className={!getAllValidated() ? 'text-gray-500' : ''}>{totalWithFees},00 €</span>
                             </div>
-                            {!isValidated && (
+                            {!getAllValidated() && (
                               <p className="text-xs text-gray-500 text-center mt-2">
-                                Exemple basé sur un FPS de 35€ (paiement différé)
+                                Exemple basé sur un FPS de 35€ (paiement immédiat)
                               </p>
                             )}
                           </>
@@ -686,7 +691,7 @@ export default function PaymentFormAlt() {
                     {/* Bouton de paiement */}
                     <button 
                       onClick={handlePayment}
-                      disabled={!isValidated || !amount || isProcessingPayment}
+                      disabled={!getAllValidated() || getTotalAmount() === 0 || isProcessingPayment}
                       className="w-full bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white py-4 rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transition-all duration-200"
                     >
                       <div className="flex items-center justify-center gap-2">
@@ -698,25 +703,30 @@ export default function PaymentFormAlt() {
                         ) : (
                           <>
                             <CreditCard className="w-5 h-5" />
-                            {isValidated && amount ? (
+                            {getAllValidated() && getTotalAmount() > 0 ? (
                               `Payer ${(() => {
-                                const totalWithFees = calculateTotalWithFees(amount, paymentMethod);
+                                const totalWithFees = calculateTotalWithFees(getTotalAmount(), paymentMethod);
                                 return `${totalWithFees},00 €`;
                               })()}`
                             ) : (
-                              'Validez d\'abord vos informations'
+                              fpsList.filter(fps => fps.isValidated).length > 0 
+                                ? `Validez les ${fpsList.length - fpsList.filter(fps => fps.isValidated).length} FPS restants`
+                                : 'Validez d\'abord vos informations'
                             )}
                           </>
                         )}
                       </div>
                     </button>
                     
-                    {!isValidated && (
+                    {!getAllValidated() && (
                       <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
                         <div className="flex items-center gap-2">
                           <AlertCircle className="w-4 h-4 text-blue-600" />
                           <p className="text-sm text-blue-700">
-                            Remplissez et validez le formulaire pour activer le paiement
+                            {fpsList.filter(fps => fps.isValidated).length > 0 
+                              ? `Validez les ${fpsList.length - fpsList.filter(fps => fps.isValidated).length} FPS restants pour continuer`
+                              : 'Remplissez et validez au moins un FPS pour activer le paiement'
+                            }
                           </p>
                         </div>
                       </div>
