@@ -50,15 +50,15 @@ export default function VehicleRegistration({ onNavigate }: VehicleRegistrationP
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <header className="text-center mb-16">
           <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-800 px-4 py-2 rounded-full text-sm font-medium mb-4">
-            <Building2 className="w-4 h-4" />
-            Solution Entreprises
+            <Smartphone className="w-4 h-4" />
+            100% Dématérialisé
           </div>
           <h2 id="company-surveillance-title" className="text-4xl font-bold text-gray-900 mb-4">
-            Fini les courriers perdus et les majorations !
+            Fini le courrier postal ! Tout est 100% dématérialisé
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Surveillez automatiquement les FPS de votre flotte. Plus de courrier postal à gérer, 
-            plus d'oublis, plus de majorations. Notifications instantanées et paiement centralisé.
+            Surveillez automatiquement les FPS de vos véhicules d'entreprise. Zéro courrier postal, 
+            zéro papier, zéro oubli. Tout se passe en ligne avec notifications instantanées et paiement centralisé.
           </p>
         </header>
 
@@ -68,39 +68,39 @@ export default function VehicleRegistration({ onNavigate }: VehicleRegistrationP
             <div className="space-y-6">
               <div className="flex items-start gap-4">
                 <div className="w-14 h-14 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  <Bell className="w-7 h-7 text-blue-600" />
+                  <Smartphone className="w-7 h-7 text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-3">Plus jamais de courrier perdu</h3>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-3">100% dématérialisé, zéro courrier postal</h3>
                   <p className="text-gray-600 leading-relaxed text-lg">
-                    Fini les courriers FPS qui se perdent dans votre entreprise ! Détection automatique 24h/24 
-                    avec notifications instantanées par email et SMS dès qu'un FPS est émis.
+                    Plus aucun courrier postal à gérer ! Détection automatique 24h/24 avec notifications 
+                    instantanées par email et SMS. Tout se passe en ligne, de la détection au paiement.
                   </p>
                 </div>
               </div>
 
               <div className="flex items-start gap-4">
                 <div className="w-14 h-14 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  <Clock className="w-7 h-7 text-purple-600" />
+                  <Bell className="w-7 h-7 text-purple-600" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-3">Zéro oubli, zéro majoration</h3>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-3">Notifications instantanées, zéro oubli</h3>
                   <p className="text-gray-600 leading-relaxed text-lg">
-                    Payez dans les délais grâce aux alertes automatiques. Plus de majorations à 180€ ! 
-                    Économisez jusqu'à 75% sur vos frais de stationnement avec notre surveillance proactive.
+                    Alertes instantanées dès qu'un FPS est émis. Plus d'oublis, plus de majorations à 180€ ! 
+                    Tout est géré numériquement avec paiement en ligne immédiat.
                   </p>
                 </div>
               </div>
 
               <div className="flex items-start gap-4">
                 <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  <BarChart3 className="w-7 h-7 text-green-600" />
+                  <FileText className="w-7 h-7 text-green-600" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-3">Gestion centralisée avec SIRET</h3>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-3">Justificatifs numériques avec SIRET</h3>
                   <p className="text-gray-600 leading-relaxed text-lg">
-                    Enregistrez votre entreprise avec votre numéro SIRET pour activer la surveillance. 
-                    Tableau de bord centralisé, facturation automatique et justificatifs pour votre comptabilité.
+                    Tous vos justificatifs de paiement sont générés automatiquement en format numérique. 
+                    Enregistrement SIRET obligatoire pour la surveillance d'entreprise et facturation centralisée.
                   </p>
                 </div>
               </div>
@@ -109,13 +109,13 @@ export default function VehicleRegistration({ onNavigate }: VehicleRegistrationP
             <div className="bg-white rounded-xl p-6 border-2 border-blue-200">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                  <Building2 className="w-5 h-5 text-blue-600" />
+                  <Smartphone className="w-5 h-5 text-blue-600" />
                 </div>
-                <span className="font-semibold text-blue-900 text-lg">Économies garanties</span>
+                <span className="font-semibold text-blue-900 text-lg">100% Numérique</span>
               </div>
               <p className="text-blue-700">
-                Évitez les majorations de 180€ ! Nos clients entreprises économisent en moyenne 2 400€ par an 
-                grâce à la surveillance automatique. SIRET requis pour l'activation.
+                Zéro courrier postal, zéro papier, zéro perte de temps ! Évitez les majorations de 180€ 
+                grâce à notre surveillance 100% dématérialisée. SIRET requis pour l'activation entreprise.
               </p>
             </div>
           </div>
@@ -193,7 +193,7 @@ export default function VehicleRegistration({ onNavigate }: VehicleRegistrationP
               <div className="bg-blue-50 px-6 py-4 border-t border-blue-100">
                 <div className="flex items-center gap-2 text-sm text-blue-700">
                   <Shield className="w-4 h-4" />
-                  <span>Plus de courrier • Plus d'oublis • Plus de majorations</span>
+                  <span>Zéro courrier postal • 100% dématérialisé • Zéro oubli</span>
                 </div>
               </div>
             </div>
@@ -267,15 +267,15 @@ export default function VehicleRegistration({ onNavigate }: VehicleRegistrationP
               <div className="flex items-center justify-center gap-6 text-sm text-gray-500">
                 <span className="flex items-center gap-1">
                   <CheckCircle className="w-4 h-4 text-green-500" />
-                  Plus de courrier perdu
+                  Zéro courrier postal
                 </span>
                 <span className="flex items-center gap-1">
                   <CheckCircle className="w-4 h-4 text-green-500" />
-                  Zéro majoration
+                  100% dématérialisé
                 </span>
                 <span className="flex items-center gap-1">
                   <CheckCircle className="w-4 h-4 text-green-500" />
-                  Économies garanties
+                  Zéro oubli
                 </span>
               </div>
             </div>
