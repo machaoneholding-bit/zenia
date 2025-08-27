@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Car, Bell, Smartphone, FileText, CheckCircle, User, Plus, AlertTriangle, Shield, Building2, Users, BarChart3 } from 'lucide-react';
+import { Car, Bell, Smartphone, FileText, CheckCircle, User, Plus, AlertTriangle, Shield, Building2, Users, BarChart3, Clock } from 'lucide-react';
 
 interface VehicleRegistrationProps {
   onNavigate: (page: string) => void;
