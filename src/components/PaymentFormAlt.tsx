@@ -392,7 +392,10 @@ export default function PaymentFormAlt() {
                       </div>
                       <button
                         type="button"
-                        onClick={() => setShowScanner(true)}
+                        onClick={() => {
+                          setShowScanner(true);
+                          setScanningForIndex(fpsList[0].id);
+                        }}
                         className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center gap-2"
                       >
                         <Camera className="w-4 h-4" />
@@ -401,119 +404,176 @@ export default function PaymentFormAlt() {
                     </div>
                   </div>
 
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div className="md:col-span-2">
-                      <label htmlFor="fps-number" className="block text-sm font-semibold text-gray-700 mb-3">
-                        Numéro de l'avis de paiement *
-                      </label>
-                      <input
-                        type="text"
-                        id="fps-number"
-                        name="fps-number"
-                        autoComplete="off"
-                        aria-describedby="fps-number-help"
-                        value={fpsNumber}
-                        onChange={handleFpsNumberChange}
-                        placeholder="Ex: 12345678901234 56 7 890 123 456"
-                        className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 font-mono text-lg"
-                      />
-                      <p id="fps-number-help" className="text-xs text-gray-500 mt-2 bg-gray-50 px-3 py-2 rounded-lg">
-                        Format: 14 chiffres + 2 chiffres + 1 + 3 + 3 + 3 (26 chiffres au total)
-                      </p>
-                    </div>
-
-                    <div>
-                      <label htmlFor="fps-key" className="block text-sm font-semibold text-gray-700 mb-3">
-                        Clé de contrôle *
-                      </label>
-                      <input
-                        type="text"
-                        id="fps-key"
-                        name="fps-key"
-                        autoComplete="off"
-                        aria-describedby="fps-key-help"
-                        value={fpsKey}
-                        onChange={handleFpsKeyChange}
-                        placeholder="Ex: 89"
-                        maxLength={2}
-                        className={`w-full px-4 py-4 border-2 rounded-xl focus:ring-2 transition-all duration-200 font-mono text-lg ${
-                          validationError && fpsKey === '00'
-                            ? 'border-red-300 focus:ring-red-500 focus:border-red-500 bg-red-50'
-                            : 'border-gray-200 focus:ring-blue-500 focus:border-blue-500'
-                        }`}
-                      />
-                      <p id="fps-key-help" className="text-xs text-gray-500 mt-2 bg-gray-50 px-3 py-2 rounded-lg">
-                        2 chiffres après le numéro
-                      </p>
-                      {validationError && fpsKey === '00' && (
-                        <div className="mt-2 bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">
-                          <AlertCircle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
-                          <p className="text-sm text-red-700">{validationError}</p>
+                  {/* FPS Forms */}
+                  {fpsList.map((fps, index) => (
+                    <div key={fps.id} className="bg-gray-50 rounded-xl p-6 border-2 border-gray-200">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                          <span className="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-sm font-bold">
+                            {index + 1}
+                          </span>
+                          FPS #{index + 1}
+                        </h3>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowScanner(true);
+                              setScanningForIndex(fps.id);
+                            }}
+                            className="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 px-3 py-1 rounded-lg text-sm font-medium transition-colors duration-200 flex items-center gap-1"
+                          >
+                            <Camera className="w-3 h-3" />
+                            Scanner
+                          </button>
+                          {fpsList.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => removeFPS(fps.id)}
+                              className="bg-red-100 hover:bg-red-200 text-red-700 px-2 py-1 rounded-lg transition-colors duration-200"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
                         </div>
-                      )}
+                      </div>
+
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div className="md:col-span-2">
+                          <label htmlFor={`fps-number-${fps.id}`} className="block text-sm font-semibold text-gray-700 mb-2">
+                            Numéro de l'avis de paiement *
+                          </label>
+                          <input
+                            type="text"
+                            id={`fps-number-${fps.id}`}
+                            name={`fps-number-${fps.id}`}
+                            autoComplete="off"
+                            aria-describedby={`fps-number-help-${fps.id}`}
+                            value={fps.fpsNumber}
+                            onChange={(e) => handleFpsNumberChange(fps.id, e)}
+                            placeholder="Ex: 12345678901234 56 7 890 123 456"
+                            className="w-full px-3 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 font-mono"
+                          />
+                          <p id={`fps-number-help-${fps.id}`} className="text-xs text-gray-500 mt-1">
+                            Format: 14 chiffres + 2 chiffres + 1 + 3 + 3 + 3 (26 chiffres au total)
+                          </p>
+                        </div>
+
+                        <div>
+                          <label htmlFor={`fps-key-${fps.id}`} className="block text-sm font-semibold text-gray-700 mb-2">
+                            Clé de contrôle *
+                          </label>
+                          <input
+                            type="text"
+                            id={`fps-key-${fps.id}`}
+                            name={`fps-key-${fps.id}`}
+                            autoComplete="off"
+                            aria-describedby={`fps-key-help-${fps.id}`}
+                            value={fps.fpsKey}
+                            onChange={(e) => handleFpsKeyChange(fps.id, e)}
+                            placeholder="Ex: 89"
+                            maxLength={2}
+                            className={`w-full px-3 py-3 border-2 rounded-lg focus:ring-2 transition-all duration-200 font-mono ${
+                              validationErrors[fps.id] && fps.fpsKey === '00'
+                                ? 'border-red-300 focus:ring-red-500 focus:border-red-500 bg-red-50'
+                                : 'border-gray-200 focus:ring-blue-500 focus:border-blue-500'
+                            }`}
+                          />
+                          <p id={`fps-key-help-${fps.id}`} className="text-xs text-gray-500 mt-1">
+                            2 chiffres après le numéro
+                          </p>
+                          {validationErrors[fps.id] && fps.fpsKey === '00' && (
+                            <div className="mt-2 bg-red-50 border border-red-200 rounded-lg p-2 flex items-start gap-2">
+                              <AlertCircle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
+                              <p className="text-sm text-red-700">{validationErrors[fps.id]}</p>
+                            </div>
+                          )}
+                        </div>
+
+                        <div>
+                          <label htmlFor={`license-plate-${fps.id}`} className="block text-sm font-semibold text-gray-700 mb-2">
+                            Immatriculation *
+                          </label>
+                          <input
+                            type="text"
+                            id={`license-plate-${fps.id}`}
+                            name={`license-plate-${fps.id}`}
+                            autoComplete="off"
+                            aria-describedby={`license-plate-help-${fps.id}`}
+                            value={fps.licensePlate}
+                            onChange={(e) => handleLicensePlateChange(fps.id, e)}
+                            placeholder="Ex: AB12"
+                            maxLength={4}
+                            className="w-full px-3 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 font-mono uppercase"
+                          />
+                          <p id={`license-plate-help-${fps.id}`} className="text-xs text-gray-500 mt-1">
+                            4 premiers caractères
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="pt-4 border-t border-gray-300 mt-4">
+                        <button
+                          id={`validate-button-${fps.id}`}
+                          onClick={() => handleValidate(index)}
+                          disabled={!isFPSValid(fps) || validatingIndex === index || (fps.fpsKey === '00')}
+                          type="button"
+                          aria-describedby={`validation-help-${fps.id}`}
+                          className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed text-white py-3 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center gap-2"
+                        >
+                          {validatingIndex === index ? (
+                            <>
+                              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                              Vérification...
+                            </>
+                          ) : fps.isValidated ? (
+                            <>
+                              <CheckCircle className="w-5 h-5" />
+                              Validé - {fps.amount}€
+                            </>
+                          ) : (
+                            <>
+                              <AlertCircle className="w-5 h-5" />
+                              Valider ce FPS
+                            </>
+                          )}
+                        </button>
+                        <p id={`validation-help-${fps.id}`} className="sr-only">
+                          Cliquez pour valider les informations de ce FPS
+                        </p>
+                        {!isFPSValid(fps) && !validationErrors[fps.id] && (
+                          <p className="text-sm text-gray-500 mt-2 text-center">
+                            Veuillez remplir tous les champs pour ce FPS
+                          </p>
+                        )}
+                      </div>
                     </div>
+                  ))}
 
-                    <div>
-                      <label htmlFor="license-plate" className="block text-sm font-semibold text-gray-700 mb-3">
-                        Immatriculation *
-                      </label>
-                      <input
-                        type="text"
-                        id="license-plate"
-                        name="license-plate"
-                        autoComplete="off"
-                        aria-describedby="license-plate-help"
-                        value={licensePlate}
-                        onChange={handleLicensePlateChange}
-                        placeholder="Ex: AB12"
-                        maxLength={4}
-                        className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 font-mono text-lg uppercase"
-                      />
-                      <p id="license-plate-help" className="text-xs text-gray-500 mt-2 bg-gray-50 px-3 py-2 rounded-lg">
-                        4 premiers caractères
-                      </p>
+                  {/* Add FPS Button */}
+                  {fpsList.length < 5 && (
+                    <div className="text-center">
+                      <button
+                        type="button"
+                        onClick={addNewFPS}
+                        className="bg-white border-2 border-dashed border-gray-300 hover:border-blue-400 hover:bg-blue-50 text-gray-600 hover:text-blue-600 px-6 py-4 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 w-full"
+                      >
+                        <Plus className="w-5 h-5" />
+                        Ajouter un autre FPS
+                      </button>
                     </div>
-                  </div>
+                  )}
 
-                  <div className="pt-6 border-t border-gray-200">
-                    <button
-                      id="validate-button"
-                      onClick={handleValidate}
-                      disabled={!isFormValid || isValidating || (fpsKey === '00')}
-                      type="button"
-                      aria-describedby="validation-help"
-                      className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed text-white py-4 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center gap-3 text-lg shadow-lg hover:shadow-xl"
-                    >
-                      {isValidating ? (
-                        <>
-                          <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                          Vérification en cours...
-                        </>
-                      ) : (
-                        <>
-                          <AlertCircle className="w-6 h-6" />
-                          Valider les informations
-                        </>
-                      )}
-                    </button>
-                    <p id="validation-help" className="sr-only">
-                      Cliquez pour valider vos informations FPS avant de procéder au paiement
-                    </p>
-                    {!isFormValid && !validationError && (
-                      <p className="text-sm text-gray-500 mt-3 text-center">
-                        Veuillez remplir tous les champs pour continuer
-                      </p>
-                    )}
-                  </div>
-
-                  {isValidated && amount && (
+                  {getAllValidated() && getTotalAmount() > 0 && (
                     <div className="bg-gradient-to-r from-emerald-50 to-green-50 border-2 border-emerald-200 rounded-xl p-6">
                       <div className="flex items-center gap-3 mb-3">
                         <CheckCircle className="w-6 h-6 text-emerald-600" />
-                        <h3 className="font-semibold text-emerald-900 text-lg">Informations validées</h3>
+                        <h3 className="font-semibold text-emerald-900 text-lg">
+                          {fpsList.filter(fps => fps.isValidated).length} FPS validé{fpsList.filter(fps => fps.isValidated).length > 1 ? 's' : ''}
+                        </h3>
                       </div>
                       <p className="text-emerald-700">
-                        Montant à régler : <span className="font-bold text-2xl">{amount},00 €</span>
+                        Montant total à régler : <span className="font-bold text-2xl">{getTotalAmount()},00 €</span>
                       </p>
                     </div>
                   )}
