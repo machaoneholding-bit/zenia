@@ -1,0 +1,672 @@
+import React, { useState } from 'react';
+import { CreditCard, Calendar, Clock, Zap, AlertCircle, CheckCircle, Shield, Camera, Scan } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
+import { supabase } from '../lib/supabase';
+import CameraScanner from './CameraScanner';
+
+export default function PaymentFormAlt() {
+  const { user } = useAuth();
+  const [fpsNumber, setFpsNumber] = useState('');
+  const [fpsKey, setFpsKey] = useState('');
+  const [licensePlate, setLicensePlate] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('immediate');
+  const [isValidated, setIsValidated] = useState(false);
+  const [amount, setAmount] = useState<number | null>(null);
+  const [isValidating, setIsValidating] = useState(false);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [validationError, setValidationError] = useState('');
+  const [showScanner, setShowScanner] = useState(false);
+
+  const saveFPSToDatabase = async (fpsData: any, sessionId: string) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('fps_records')
+        .insert({
+          user_id: user.id,
+          vehicle_id: null, // Manual FPS, no vehicle association
+          fps_number: fpsData.fps_number,
+          fps_key: fpsData.fps_key,
+          amount: parseFloat(fpsData.total_amount),
+          status: 'processing',
+          location: 'Saisie manuelle',
+          payment_method: fpsData.payment_method,
+          payment_date: new Date().toISOString()
+        });
+
+      if (error) {
+        console.error('Error saving FPS to database:', error);
+      } else {
+        console.log('FPS saved to database successfully');
+      }
+    } catch (err) {
+      console.error('Error in saveFPSToDatabase:', err);
+    }
+  };
+
+  const paymentOptions = [
+    {
+      id: 'immediate',
+      icon: Zap,
+      title: 'Paiement immédiat',
+      description: 'En une fois',
+      color: 'emerald',
+      badge: 'Recommandé'
+    },
+    {
+      id: 'split3',
+      icon: CreditCard,
+      title: 'Paiement fractionné',
+      description: 'En 3 fois',
+      color: 'blue',
+      badge: 'Populaire'
+    },
+    {
+      id: 'deferred',
+      icon: Calendar,
+      title: 'Paiement différé',
+      description: 'Dans 30 jours',
+      color: 'orange',
+      badge: 'Nouveau'
+    }
+  ];
+
+  const getColorClasses = (color: string, isSelected: boolean) => {
+    const colors = {
+      emerald: isSelected 
+        ? 'border-emerald-500 bg-emerald-50 shadow-emerald-100' 
+        : 'border-gray-200 hover:border-emerald-300 hover:shadow-md',
+      blue: isSelected 
+        ? 'border-blue-500 bg-blue-50 shadow-blue-100' 
+        : 'border-gray-200 hover:border-blue-300 hover:shadow-md',
+      orange: isSelected 
+        ? 'border-orange-500 bg-orange-50 shadow-orange-100' 
+        : 'border-gray-200 hover:border-orange-300 hover:shadow-md'
+    };
+    return colors[color as keyof typeof colors];
+  };
+
+  const getBadgeClasses = (color: string) => {
+    const colors = {
+      emerald: 'bg-emerald-100 text-emerald-700',
+      blue: 'bg-blue-100 text-blue-700',
+      orange: 'bg-orange-100 text-orange-700'
+    };
+    return colors[color as keyof typeof colors];
+  };
+
+  const calculateTotalWithFees = (baseAmount: number, method: string) => {
+    switch (method) {
+      case 'immediate':
+        return baseAmount; // 0% de frais
+      case 'split3':
+        return Math.round(baseAmount * 1.20); // +20% de frais
+      case 'deferred':
+        return Math.round(baseAmount * 1.15); // +15% de frais
+      default:
+        return baseAmount;
+    }
+  };
+
+  const handlePayment = async () => {
+    if (!isValidated || !amount) return;
+    
+    setIsProcessingPayment(true);
+    
+    try {
+      const totalAmount = calculateTotalWithFees(amount, paymentMethod);
+      const serviceFees = totalAmount - amount;
+      
+      const fpsData = {
+        fps_number: fpsNumber,
+        fps_key: fpsKey,
+        license_plate: licensePlate,
+        payment_method: paymentMethod,
+        fps_amount: amount.toString(),
+        service_fees: serviceFees.toString(),
+        total_amount: totalAmount.toString()
+      };
+
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-checkout`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({
+          fps_amount: amount,
+          service_fees: serviceFees,
+          total_amount: totalAmount,
+          currency: 'eur',
+          fps_data: fpsData,
+          success_url: `${window.location.origin}/?page=success&session_id={CHECKOUT_SESSION_ID}`,
+          cancel_url: `${window.location.origin}/?page=cancel`,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.url) {
+        // Save FPS to database before redirecting to payment
+        if (user) {
+          await saveFPSToDatabase(fpsData, data.session_id || '');
+        }
+        
+        window.location.href = data.url;
+      } else {
+        console.error('Checkout error:', data.error);
+        alert('Une erreur est survenue lors de la création de la session de paiement');
+      }
+    } catch (error) {
+      console.error('Error creating checkout session:', error);
+      alert('Une erreur est survenue lors de la création de la session de paiement');
+    } finally {
+      setIsProcessingPayment(false);
+    }
+  };
+
+  const handleScanResult = (data: { fpsNumber: string; fpsKey: string; licensePlate: string }) => {
+    setFpsNumber(data.fpsNumber);
+    setFpsKey(data.fpsKey);
+    setLicensePlate(data.licensePlate);
+    setValidationError('');
+    setShowScanner(false);
+    
+    // Auto-focus on validate button after scan
+    setTimeout(() => {
+      const validateButton = document.getElementById('validate-button') as HTMLButtonElement;
+      if (validateButton && !validateButton.disabled) {
+        validateButton.focus();
+      }
+    }, 100);
+  };
+
+  const formatFpsNumber = (value: string) => {
+    const numbers = value.replace(/\D/g, '');
+    let formatted = '';
+    if (numbers.length > 0) {
+      formatted += numbers.substring(0, 14);
+      if (numbers.length > 14) {
+        formatted += ' ' + numbers.substring(14, 16);
+        if (numbers.length > 16) {
+          formatted += ' ' + numbers.substring(16, 17);
+          if (numbers.length > 17) {
+            formatted += ' ' + numbers.substring(17, 20);
+            if (numbers.length > 20) {
+              formatted += ' ' + numbers.substring(20, 23);
+              if (numbers.length > 23) {
+                formatted += ' ' + numbers.substring(23, 26);
+              }
+            }
+          }
+        }
+      }
+    }
+    return formatted;
+  };
+
+  const handleFpsNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatFpsNumber(e.target.value);
+    setFpsNumber(formatted);
+    
+    if (formatted.replace(/\s/g, '').length === 26) {
+      const fpsKeyInput = document.getElementById('fps-key') as HTMLInputElement;
+      if (fpsKeyInput) {
+        setTimeout(() => fpsKeyInput.focus(), 100);
+      }
+    }
+  };
+
+  const handleFpsKeyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/\D/g, '').substring(0, 2);
+    setFpsKey(value);
+    
+    if (validationError) {
+      setValidationError('');
+    }
+    
+    if (value.length === 2) {
+      const licensePlateInput = document.getElementById('license-plate') as HTMLInputElement;
+      if (licensePlateInput) {
+        setTimeout(() => licensePlateInput.focus(), 100);
+      }
+    }
+  };
+
+  const handleLicensePlateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.toUpperCase().substring(0, 4);
+    setLicensePlate(value);
+    
+    if (value.length === 4) {
+      const validateButton = document.getElementById('validate-button') as HTMLButtonElement;
+      if (validateButton && !validateButton.disabled) {
+        setTimeout(() => validateButton.focus(), 100);
+      }
+    }
+  };
+
+  const isFormValid = fpsNumber.replace(/\s/g, '').length === 26 && fpsKey.length === 2 && licensePlate.length === 4;
+
+  const handleValidate = async () => {
+    if (!isFormValid) return;
+    
+    if (fpsKey === '00') {
+      setValidationError('La clé de contrôle "00" n\'est pas valide. Veuillez vérifier votre avis de paiement.');
+      return;
+    }
+    
+    setValidationError('');
+    setIsValidating(true);
+    
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    const simulatedAmount = Math.floor(Math.random() * 100) + 35;
+    setAmount(simulatedAmount);
+    setIsValidated(true);
+    setIsValidating(false);
+  };
+
+  return (
+    <section id="payment-section" className="py-20 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50" aria-labelledby="payment-form-title">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <header className="text-center mb-12">
+          <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-800 px-4 py-2 rounded-full text-sm font-medium mb-4">
+            <Shield className="w-4 h-4" />
+            Paiement 100% sécurisé
+          </div>
+          <h2 id="payment-form-title" className="text-4xl font-bold text-gray-900 mb-4">
+            Payer mon FPS
+          </h2>
+          <p className="text-xl text-gray-600">
+            Saisissez vos informations et choisissez votre mode de paiement
+          </p>
+        </header>
+
+        <div className="max-w-5xl mx-auto">
+          <form className="bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden" role="form" aria-labelledby="payment-form-title">
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-6">
+              <h3 className="text-xl font-semibold text-white flex items-center gap-3">
+                <AlertCircle className="w-6 h-6" />
+                Informations de votre avis FPS
+              </h3>
+              <p className="text-blue-100 mt-2">
+                Ces informations se trouvent sur votre avis de paiement
+              </p>
+              <div className="mt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowScanner(true)}
+                  className="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 text-sm"
+                >
+                  <Camera className="w-4 h-4" />
+                  Scanner avec la caméra
+                </button>
+              </div>
+            </div>
+
+            <div className="p-8">
+              <div className="grid lg:grid-cols-5 gap-8">
+                {/* Form Fields */}
+                <div className="lg:col-span-3 space-y-6">
+                  {/* Scanner Button */}
+                  <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border-2 border-indigo-200 rounded-xl p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
+                          <Scan className="w-5 h-5 text-indigo-600" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-indigo-900">Scan automatique</h3>
+                          <p className="text-sm text-indigo-700">Utilisez votre caméra pour remplir automatiquement le formulaire</p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowScanner(true)}
+                        className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center gap-2"
+                      >
+                        <Camera className="w-4 h-4" />
+                        Scanner
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div className="md:col-span-2">
+                      <label htmlFor="fps-number" className="block text-sm font-semibold text-gray-700 mb-3">
+                        Numéro de l'avis de paiement *
+                      </label>
+                      <input
+                        type="text"
+                        id="fps-number"
+                        name="fps-number"
+                        autoComplete="off"
+                        aria-describedby="fps-number-help"
+                        value={fpsNumber}
+                        onChange={handleFpsNumberChange}
+                        placeholder="Ex: 12345678901234 56 7 890 123 456"
+                        className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 font-mono text-lg"
+                      />
+                      <p id="fps-number-help" className="text-xs text-gray-500 mt-2 bg-gray-50 px-3 py-2 rounded-lg">
+                        Format: 14 chiffres + 2 chiffres + 1 + 3 + 3 + 3 (26 chiffres au total)
+                      </p>
+                    </div>
+
+                    <div>
+                      <label htmlFor="fps-key" className="block text-sm font-semibold text-gray-700 mb-3">
+                        Clé de contrôle *
+                      </label>
+                      <input
+                        type="text"
+                        id="fps-key"
+                        name="fps-key"
+                        autoComplete="off"
+                        aria-describedby="fps-key-help"
+                        value={fpsKey}
+                        onChange={handleFpsKeyChange}
+                        placeholder="Ex: 89"
+                        maxLength={2}
+                        className={`w-full px-4 py-4 border-2 rounded-xl focus:ring-2 transition-all duration-200 font-mono text-lg ${
+                          validationError && fpsKey === '00'
+                            ? 'border-red-300 focus:ring-red-500 focus:border-red-500 bg-red-50'
+                            : 'border-gray-200 focus:ring-blue-500 focus:border-blue-500'
+                        }`}
+                      />
+                      <p id="fps-key-help" className="text-xs text-gray-500 mt-2 bg-gray-50 px-3 py-2 rounded-lg">
+                        2 chiffres après le numéro
+                      </p>
+                      {validationError && fpsKey === '00' && (
+                        <div className="mt-2 bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">
+                          <AlertCircle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
+                          <p className="text-sm text-red-700">{validationError}</p>
+                        </div>
+                      )}
+                    </div>
+
+                    <div>
+                      <label htmlFor="license-plate" className="block text-sm font-semibold text-gray-700 mb-3">
+                        Immatriculation *
+                      </label>
+                      <input
+                        type="text"
+                        id="license-plate"
+                        name="license-plate"
+                        autoComplete="off"
+                        aria-describedby="license-plate-help"
+                        value={licensePlate}
+                        onChange={handleLicensePlateChange}
+                        placeholder="Ex: AB12"
+                        maxLength={4}
+                        className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 font-mono text-lg uppercase"
+                      />
+                      <p id="license-plate-help" className="text-xs text-gray-500 mt-2 bg-gray-50 px-3 py-2 rounded-lg">
+                        4 premiers caractères
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="pt-6 border-t border-gray-200">
+                    <button
+                      id="validate-button"
+                      onClick={handleValidate}
+                      disabled={!isFormValid || isValidating || (fpsKey === '00')}
+                      type="button"
+                      aria-describedby="validation-help"
+                      className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed text-white py-4 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center gap-3 text-lg shadow-lg hover:shadow-xl"
+                    >
+                      {isValidating ? (
+                        <>
+                          <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          Vérification en cours...
+                        </>
+                      ) : (
+                        <>
+                          <AlertCircle className="w-6 h-6" />
+                          Valider les informations
+                        </>
+                      )}
+                    </button>
+                    <p id="validation-help" className="sr-only">
+                      Cliquez pour valider vos informations FPS avant de procéder au paiement
+                    </p>
+                    {!isFormValid && !validationError && (
+                      <p className="text-sm text-gray-500 mt-3 text-center">
+                        Veuillez remplir tous les champs pour continuer
+                      </p>
+                    )}
+                  </div>
+
+                  {isValidated && amount && (
+                    <div className="bg-gradient-to-r from-emerald-50 to-green-50 border-2 border-emerald-200 rounded-xl p-6">
+                      <div className="flex items-center gap-3 mb-3">
+                        <CheckCircle className="w-6 h-6 text-emerald-600" />
+                        <h3 className="font-semibold text-emerald-900 text-lg">Informations validées</h3>
+                      </div>
+                      <p className="text-emerald-700">
+                        Montant à régler : <span className="font-bold text-2xl">{amount},00 €</span>
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Sidebar avec options de paiement */}
+                <aside className="lg:col-span-2 space-y-6" aria-labelledby="payment-info-title">
+                  {/* Montant */}
+                  <div className="bg-white rounded-2xl p-6 border-2 border-blue-200 shadow-lg">
+                    <div className="text-center mb-6">
+                      <p className="text-sm text-gray-600 mb-1">Montant à payer</p>
+                      <p className="text-4xl font-bold text-gray-900">
+                        {isValidated && amount ? `${amount},00 €` : '35,00 €'}
+                      </p>
+                      {!isValidated && (
+                        <p className="text-xs text-gray-500 mt-1">Exemple de montant</p>
+                      )}
+                    </div>
+
+                    {/* Options de paiement */}
+                    <div className="space-y-3 mb-6">
+                      <label className="block text-sm font-semibold text-gray-700 mb-3">
+                        Mode de paiement
+                      </label>
+                      {paymentOptions.map((option) => {
+                        const Icon = option.icon;
+                        const isSelected = isValidated && paymentMethod === option.id;
+                        const baseAmount = isValidated && amount ? amount : 35; // Exemple de montant
+                        const totalWithFees = calculateTotalWithFees(baseAmount, option.id);
+                        const serviceFees = totalWithFees - baseAmount;
+                        const isDisabled = !isValidated;
+                        
+                        return (
+                          <label
+                            key={option.id}
+                            className={`relative p-4 border-2 rounded-xl text-left transition-all duration-200 block ${
+                              isDisabled 
+                                ? 'border-gray-200 bg-gray-50 cursor-not-allowed opacity-60' 
+                                : `cursor-pointer ${getColorClasses(option.color, isSelected)} ${isSelected ? 'shadow-lg transform scale-105' : 'hover:transform hover:scale-102'}`
+                            }`}
+                          >
+                            <input
+                              type="radio"
+                              name="payment-method"
+                              value={option.id}
+                              checked={isSelected}
+                              onChange={() => isValidated && setPaymentMethod(option.id)}
+                              disabled={isDisabled}
+                              className="sr-only"
+                            />
+                            {option.badge && (
+                              <div className={`absolute -top-2 -right-2 px-2 py-1 rounded-full text-xs font-medium ${
+                                isDisabled ? 'bg-gray-100 text-gray-500' : getBadgeClasses(option.color)
+                              }`}>
+                                {option.badge}
+                              </div>
+                            )}
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                                  isDisabled 
+                                    ? 'bg-gray-100' 
+                                    : isSelected ? `bg-${option.color}-100` : 'bg-gray-100'
+                                }`}>
+                                  <Icon className={`w-4 h-4 ${
+                                    isDisabled 
+                                      ? 'text-gray-400' 
+                                      : isSelected ? `text-${option.color}-600` : 'text-gray-500'
+                                  }`} />
+                                </div>
+                                <div>
+                                  <p className={`font-semibold text-sm ${
+                                    isDisabled 
+                                      ? 'text-gray-500' 
+                                      : isSelected ? `text-${option.color}-900` : 'text-gray-900'
+                                  }`}>
+                                    {option.title}
+                                  </p>
+                                  <p className={`text-xs ${
+                                    isDisabled 
+                                      ? 'text-gray-400' 
+                                      : isSelected ? `text-${option.color}-600` : 'text-gray-500'
+                                  }`}>
+                                    {option.description}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <p className={`text-lg font-bold ${isDisabled ? 'text-gray-500' : 'text-gray-900'}`}>
+                                  {totalWithFees}€
+                                </p>
+                              </div>
+                            </div>
+                            
+                            {/* Payment breakdown for selected option */}
+                            {isValidated && paymentMethod === option.id && option.id === 'deferred' && (
+                              <div className="mt-3 pt-3 border-t border-gray-200 space-y-2 text-sm">
+                                <div className="flex justify-between text-gray-600">
+                                  <span>Maintenant</span>
+                                  <span className="font-medium">0€</span>
+                                </div>
+                                <div className="text-center text-xs text-green-600 font-medium py-1">
+                                  Recevez votre justificatif
+                                </div>
+                                <div className="flex justify-between text-gray-600">
+                                  <span>Dans 30 jours</span>
+                                  <span className="font-medium">{totalWithFees}€</span>
+                                </div>
+                              </div>
+                            )}
+                            {isValidated && paymentMethod === option.id && option.id === 'split3' && (
+                              <div className="mt-3 pt-3 border-t border-gray-200 space-y-2 text-sm">
+                                <div className="flex justify-between text-gray-600">
+                                  <span>1× Maintenant</span>
+                                  <span className="font-medium">{Math.round(totalWithFees / 3)}€</span>
+                                </div>
+                                <div className="flex justify-between text-gray-600">
+                                  <span>1× Dans 30 jours</span>
+                                  <span className="font-medium">{Math.round(totalWithFees / 3)}€</span>
+                                </div>
+                                <div className="flex justify-between text-gray-600">
+                                  <span>1× Dans 60 jours</span>
+                                  <span className="font-medium">{Math.round(totalWithFees / 3)}€</span>
+                                </div>
+                              </div>
+                            )}
+                          </label>
+                        );
+                      })}
+                    </div>
+
+                    {/* Détail du paiement */}
+                    <div className="space-y-3 text-sm mb-6 bg-gray-50 p-4 rounded-lg">
+                      {(() => {
+                        const baseAmount = isValidated && amount ? amount : 35;
+                        const currentMethod = isValidated ? paymentMethod : 'deferred'; // Montrer l'exemple avec le différé
+                        const totalWithFees = calculateTotalWithFees(baseAmount, currentMethod);
+                        const serviceFees = totalWithFees - baseAmount;
+                        
+                        return (
+                          <>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Montant FPS:</span>
+                              <span className={`font-semibold ${!isValidated ? 'text-gray-500' : ''}`}>
+                                {baseAmount},00 €
+                              </span>
+                            </div>
+                            {serviceFees > 0 && (
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Frais de service:</span>
+                                <span className={`font-semibold ${!isValidated ? 'text-gray-500' : ''}`}>
+                                  {serviceFees},00 €
+                                </span>
+                              </div>
+                            )}
+                            <div className="flex justify-between font-bold text-lg border-t pt-2">
+                              <span className={!isValidated ? 'text-gray-500' : ''}>Total:</span>
+                              <span className={!isValidated ? 'text-gray-500' : ''}>{totalWithFees},00 €</span>
+                            </div>
+                            {!isValidated && (
+                              <p className="text-xs text-gray-500 text-center mt-2">
+                                Exemple basé sur un FPS de 35€ (paiement différé)
+                              </p>
+                            )}
+                          </>
+                        );
+                      })()}
+                    </div>
+
+                    {/* Bouton de paiement */}
+                    <button 
+                      onClick={handlePayment}
+                      disabled={!isValidated || !amount || isProcessingPayment}
+                      className="w-full bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white py-4 rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transition-all duration-200"
+                    >
+                      <div className="flex items-center justify-center gap-2">
+                        {isProcessingPayment ? (
+                          <>
+                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                            Redirection...
+                          </>
+                        ) : (
+                          <>
+                            <CreditCard className="w-5 h-5" />
+                            {isValidated && amount ? (
+                              `Payer ${(() => {
+                                const totalWithFees = calculateTotalWithFees(amount, paymentMethod);
+                                return `${totalWithFees},00 €`;
+                              })()}`
+                            ) : (
+                              'Validez d\'abord vos informations'
+                            )}
+                          </>
+                        )}
+                      </div>
+                    </button>
+                    
+                    {!isValidated && (
+                      <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
+                        <div className="flex items-center gap-2">
+                          <AlertCircle className="w-4 h-4 text-blue-600" />
+                          <p className="text-sm text-blue-700">
+                            Remplissez et validez le formulaire pour activer le paiement
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </aside>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      {/* Camera Scanner Modal */}
+      {showScanner && (
+        <CameraScanner
+          onScanResult={handleScanResult}
+          onClose={() => setShowScanner(false)}
+        />
+      )}
+    </section>
+  );
+}

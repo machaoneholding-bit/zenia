@@ -1,0 +1,25 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://zenia.fr/sitemap.xml
+
+# Crawl-delay for respectful crawling
+Crawl-delay: 1
+
+# Disallow admin and private areas
+Disallow: /admin/
+Disallow: /dashboard/
+Disallow: /api/
+Disallow: /.env
+Disallow: /node_modules/
+
+# Allow important pages
+Allow: /
+Allow: /login
+Allow: /register
+Allow: /faq
+Allow: /how-it-works
+Allow: /payment
+Allow: /success
+Allow: /cancel
