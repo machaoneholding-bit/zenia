@@ -1,44 +1,55 @@
 import React, { useState } from 'react';
-import { CreditCard, Calendar, Clock, Zap, AlertCircle, CheckCircle, Shield, Camera, Scan } from 'lucide-react';
+import { CreditCard, Calendar, Clock, Zap, AlertCircle, CheckCircle, Shield, Camera, Scan, Plus, X, Trash2 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
 import CameraScanner from './CameraScanner';
 
 export default function PaymentFormAlt() {
   const { user } = useAuth();
-  const [fpsNumber, setFpsNumber] = useState('');
-  const [fpsKey, setFpsKey] = useState('');
-  const [licensePlate, setLicensePlate] = useState('');
+  const [fpsList, setFpsList] = useState([{
+    id: 1,
+    fpsNumber: '',
+    fpsKey: '',
+    licensePlate: '',
+    amount: null as number | null,
+    isValidated: false
+  }]);
   const [paymentMethod, setPaymentMethod] = useState('immediate');
-  const [isValidated, setIsValidated] = useState(false);
-  const [amount, setAmount] = useState<number | null>(null);
-  const [isValidating, setIsValidating] = useState(false);
+  const [validatingIndex, setValidatingIndex] = useState<number | null>(null);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
-  const [validationError, setValidationError] = useState('');
+  const [validationErrors, setValidationErrors] = useState<{[key: number]: string}>({});
   const [showScanner, setShowScanner] = useState(false);
+  const [scanningForIndex, setScanningForIndex] = useState<number | null>(null);
 
   const saveFPSToDatabase = async (fpsData: any, sessionId: string) => {
     if (!user) return;
 
     try {
-      const { error } = await supabase
-        .from('fps_records')
-        .insert({
+      // Save all FPS records
+      const fpsRecords = fpsList
+        .filter(fps => fps.isValidated && fps.amount)
+        .map(fps => ({
           user_id: user.id,
-          vehicle_id: null, // Manual FPS, no vehicle association
-          fps_number: fpsData.fps_number,
-          fps_key: fpsData.fps_key,
-          amount: parseFloat(fpsData.total_amount),
+          vehicle_id: null,
+          fps_number: fps.fpsNumber,
+          fps_key: fps.fpsKey,
+          amount: fps.amount!,
           status: 'processing',
           location: 'Saisie manuelle',
           payment_method: fpsData.payment_method,
           payment_date: new Date().toISOString()
-        });
+        }));
+
+      if (fpsRecords.length === 0) return;
+
+      const { error } = await supabase
+        .from('fps_records')
+        .insert(fpsRecords);
 
       if (error) {
         console.error('Error saving FPS to database:', error);
       } else {
-        console.log('FPS saved to database successfully');
+        console.log('All FPS saved to database successfully');
       }
     } catch (err) {
       console.error('Error in saveFPSToDatabase:', err);
@@ -109,23 +120,68 @@ export default function PaymentFormAlt() {
     }
   };
 
+  const getTotalAmount = () => {
+    return fpsList
+      .filter(fps => fps.isValidated && fps.amount)
+      .reduce((sum, fps) => sum + fps.amount!, 0);
+  };
+
+  const getAllValidated = () => {
+    return fpsList.every(fps => fps.isValidated && fps.amount);
+  };
+
+  const addNewFPS = () => {
+    const newId = Math.max(...fpsList.map(fps => fps.id)) + 1;
+    setFpsList([...fpsList, {
+      id: newId,
+      fpsNumber: '',
+      fpsKey: '',
+      licensePlate: '',
+      amount: null,
+      isValidated: false
+    }]);
+  };
+
+  const removeFPS = (id: number) => {
+    if (fpsList.length > 1) {
+      setFpsList(fpsList.filter(fps => fps.id !== id));
+      // Clear validation errors for removed FPS
+      const newErrors = { ...validationErrors };
+      delete newErrors[id];
+      setValidationErrors(newErrors);
+    }
+  };
+
+  const updateFPS = (id: number, field: string, value: string) => {
+    setFpsList(fpsList.map(fps => 
+      fps.id === id ? { ...fps, [field]: value, isValidated: false, amount: null } : fps
+    ));
+    
+    // Clear validation error for this FPS
+    if (validationErrors[id]) {
+      const newErrors = { ...validationErrors };
+      delete newErrors[id];
+      setValidationErrors(newErrors);
+    }
+  };
   const handlePayment = async () => {
-    if (!isValidated || !amount) return;
+    const totalAmount = getTotalAmount();
+    if (!getAllValidated() || totalAmount === 0) return;
     
     setIsProcessingPayment(true);
     
     try {
-      const totalAmount = calculateTotalWithFees(amount, paymentMethod);
-      const serviceFees = totalAmount - amount;
+      const totalWithFees = calculateTotalWithFees(totalAmount, paymentMethod);
+      const serviceFees = totalWithFees - totalAmount;
       
       const fpsData = {
-        fps_number: fpsNumber,
-        fps_key: fpsKey,
-        license_plate: licensePlate,
+        fps_number: fpsList.map(fps => fps.fpsNumber).join(', '),
+        fps_key: fpsList.map(fps => fps.fpsKey).join(', '),
+        license_plate: fpsList.map(fps => fps.licensePlate).join(', '),
         payment_method: paymentMethod,
-        fps_amount: amount.toString(),
+        fps_amount: totalAmount.toString(),
         service_fees: serviceFees.toString(),
-        total_amount: totalAmount.toString()
+        total_amount: totalWithFees.toString()
       };
 
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-checkout`, {
@@ -135,9 +191,9 @@ export default function PaymentFormAlt() {
           'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
         },
         body: JSON.stringify({
-          fps_amount: amount,
+          fps_amount: totalAmount,
           service_fees: serviceFees,
-          total_amount: totalAmount,
+          total_amount: totalWithFees,
           currency: 'eur',
           fps_data: fpsData,
           success_url: `${window.location.origin}/?page=success&session_id={CHECKOUT_SESSION_ID}`,
@@ -167,15 +223,17 @@ export default function PaymentFormAlt() {
   };
 
   const handleScanResult = (data: { fpsNumber: string; fpsKey: string; licensePlate: string }) => {
-    setFpsNumber(data.fpsNumber);
-    setFpsKey(data.fpsKey);
-    setLicensePlate(data.licensePlate);
-    setValidationError('');
+    if (scanningForIndex !== null) {
+      updateFPS(scanningForIndex, 'fpsNumber', data.fpsNumber);
+      updateFPS(scanningForIndex, 'fpsKey', data.fpsKey);
+      updateFPS(scanningForIndex, 'licensePlate', data.licensePlate);
+    }
     setShowScanner(false);
+    setScanningForIndex(null);
     
     // Auto-focus on validate button after scan
     setTimeout(() => {
-      const validateButton = document.getElementById('validate-button') as HTMLButtonElement;
+      const validateButton = document.getElementById(`validate-button-${scanningForIndex}`) as HTMLButtonElement;
       if (validateButton && !validateButton.disabled) {
         validateButton.focus();
       }
@@ -206,65 +264,76 @@ export default function PaymentFormAlt() {
     return formatted;
   };
 
-  const handleFpsNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFpsNumberChange = (id: number, e: React.ChangeEvent<HTMLInputElement>) => {
     const formatted = formatFpsNumber(e.target.value);
-    setFpsNumber(formatted);
+    updateFPS(id, 'fpsNumber', formatted);
     
     if (formatted.replace(/\s/g, '').length === 26) {
-      const fpsKeyInput = document.getElementById('fps-key') as HTMLInputElement;
+      const fpsKeyInput = document.getElementById(`fps-key-${id}`) as HTMLInputElement;
       if (fpsKeyInput) {
         setTimeout(() => fpsKeyInput.focus(), 100);
       }
     }
   };
 
-  const handleFpsKeyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFpsKeyChange = (id: number, e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/\D/g, '').substring(0, 2);
-    setFpsKey(value);
+    updateFPS(id, 'fpsKey', value);
     
-    if (validationError) {
-      setValidationError('');
+    if (validationErrors[id]) {
+      const newErrors = { ...validationErrors };
+      delete newErrors[id];
+      setValidationErrors(newErrors);
     }
     
     if (value.length === 2) {
-      const licensePlateInput = document.getElementById('license-plate') as HTMLInputElement;
+      const licensePlateInput = document.getElementById(`license-plate-${id}`) as HTMLInputElement;
       if (licensePlateInput) {
         setTimeout(() => licensePlateInput.focus(), 100);
       }
     }
   };
 
-  const handleLicensePlateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLicensePlateChange = (id: number, e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.toUpperCase().substring(0, 4);
-    setLicensePlate(value);
+    updateFPS(id, 'licensePlate', value);
     
     if (value.length === 4) {
-      const validateButton = document.getElementById('validate-button') as HTMLButtonElement;
+      const validateButton = document.getElementById(`validate-button-${id}`) as HTMLButtonElement;
       if (validateButton && !validateButton.disabled) {
         setTimeout(() => validateButton.focus(), 100);
       }
     }
   };
 
-  const isFormValid = fpsNumber.replace(/\s/g, '').length === 26 && fpsKey.length === 2 && licensePlate.length === 4;
+  const isFPSValid = (fps: any) => {
+    return fps.fpsNumber.replace(/\s/g, '').length === 26 && 
+           fps.fpsKey.length === 2 && 
+           fps.licensePlate.length === 4;
+  };
 
-  const handleValidate = async () => {
-    if (!isFormValid) return;
+  const handleValidate = async (fpsIndex: number) => {
+    const fps = fpsList[fpsIndex];
+    if (!isFPSValid(fps)) return;
     
-    if (fpsKey === '00') {
-      setValidationError('La clé de contrôle "00" n\'est pas valide. Veuillez vérifier votre avis de paiement.');
+    if (fps.fpsKey === '00') {
+      setValidationErrors({
+        ...validationErrors,
+        [fps.id]: 'La clé de contrôle "00" n\'est pas valide. Veuillez vérifier votre avis de paiement.'
+      });
       return;
     }
     
-    setValidationError('');
-    setIsValidating(true);
+    setValidatingIndex(fpsIndex);
     
     await new Promise(resolve => setTimeout(resolve, 1500));
     
     const simulatedAmount = Math.floor(Math.random() * 100) + 35;
-    setAmount(simulatedAmount);
-    setIsValidated(true);
-    setIsValidating(false);
+    
+    setFpsList(fpsList.map((f, i) => 
+      i === fpsIndex ? { ...f, amount: simulatedAmount, isValidated: true } : f
+    ));
+    setValidatingIndex(null);
   };
 
   return (
