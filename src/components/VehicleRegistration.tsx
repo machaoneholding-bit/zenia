@@ -1,52 +1,64 @@
 import React, { useState } from 'react';
-import { Car, Bell, Smartphone, FileText, CheckCircle, User, Plus, AlertTriangle, Shield } from 'lucide-react';
+import { Car, Bell, Smartphone, FileText, CheckCircle, User, Plus, AlertTriangle, Shield, Building2, Users, BarChart3 } from 'lucide-react';
 
 interface VehicleRegistrationProps {
   onNavigate: (page: string) => void;
 }
 
 export default function VehicleRegistration({ onNavigate }: VehicleRegistrationProps) {
-  const [vehicles] = useState([
+  const [companyVehicles] = useState([
     {
       id: '1',
-      licensePlate: 'AB-123-CD',
-      brand: 'Renault',
-      model: 'Clio',
-      year: 2020,
-      color: 'Bleu',
+      licensePlate: 'ENT-001-FR',
+      brand: 'Mercedes',
+      model: 'Sprinter',
+      year: 2022,
+      color: 'Blanc',
       notifications: true,
       lastFPS: '2024-01-20',
-      totalFPS: 5,
+      totalFPS: 12,
       isActive: true
     },
     {
       id: '2',
-      licensePlate: 'EF-456-GH',
-      brand: 'Peugeot',
-      model: '308',
-      year: 2019,
-      color: 'Blanc',
+      licensePlate: 'ENT-002-FR',
+      brand: 'Ford',
+      model: 'Transit',
+      year: 2021,
+      color: 'Gris',
       notifications: true,
       lastFPS: '2024-01-18',
-      totalFPS: 3,
+      totalFPS: 8,
+      isActive: true
+    },
+    {
+      id: '3',
+      licensePlate: 'ENT-003-FR',
+      brand: 'Renault',
+      model: 'Master',
+      year: 2023,
+      color: 'Blanc',
+      notifications: true,
+      lastFPS: '2024-01-15',
+      totalFPS: 5,
       isActive: true
     }
   ]);
 
   return (
-    <section className="py-20 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50" aria-labelledby="vehicle-registration-title">
+    <section className="py-20 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50" aria-labelledby="company-surveillance-title">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <header className="text-center mb-16">
           <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-800 px-4 py-2 rounded-full text-sm font-medium mb-4">
-            <Car className="w-4 h-4" />
-            Surveillance automatique
+            <Building2 className="w-4 h-4" />
+            Solution Entreprises
           </div>
-          <h2 id="vehicle-registration-title" className="text-4xl font-bold text-gray-900 mb-4">
-            Simplifiez vos prochains FPS
+          <h2 id="company-surveillance-title" className="text-4xl font-bold text-gray-900 mb-4">
+            Surveillance automatique pour entreprises
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Créez votre compte et enregistrez vos véhicules pour une expérience 100% dématérialisée. 
-            Plus de courrier, plus d'oublis !
+            Gérez les FPS de votre flotte de véhicules en toute simplicité. Surveillance automatique, 
+            notifications instantanées et paiement centralisé pour toute votre entreprise.
           </p>
         </header>
 
@@ -55,65 +67,71 @@ export default function VehicleRegistration({ onNavigate }: VehicleRegistrationP
           <div className="space-y-8">
             <div className="space-y-6">
               <div className="flex items-start gap-4">
-                <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  <AlertTriangle className="w-7 h-7 text-red-600" />
+                <div className="w-14 h-14 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                  <BarChart3 className="w-7 h-7 text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-3">Détection automatique des FPS</h3>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-3">Surveillance de flotte centralisée</h3>
                   <p className="text-gray-600 leading-relaxed text-lg">
-                    Notre système surveille automatiquement l'émission de nouveaux FPS pour vos véhicules enregistrés. 
-                    Vous recevez une notification instantanée dès qu'un FPS vous est adressé.
+                    Surveillez automatiquement tous les véhicules de votre entreprise depuis un tableau de bord unique. 
+                    Détection instantanée des nouveaux FPS avec notification par email et SMS.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="w-14 h-14 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
+                  <Building2 className="w-7 h-7 text-purple-600" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-3">Gestion administrative simplifiée</h3>
+                  <p className="text-gray-600 leading-relaxed text-lg">
+                    Enregistrez votre entreprise avec votre numéro SIRET pour activer la surveillance. 
+                    Gestion centralisée des paiements avec justificatifs automatiques pour votre comptabilité.
                   </p>
                 </div>
               </div>
 
               <div className="flex items-start gap-4">
                 <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  <Bell className="w-7 h-7 text-green-600" />
+                  <Users className="w-7 h-7 text-green-600" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-3">Fini le courrier postal</h3>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-3">Équipe et délégation</h3>
                   <p className="text-gray-600 leading-relaxed text-lg">
-                    Plus besoin d'attendre le courrier ! Recevez vos notifications par email et SMS 
-                    dès qu'un FPS est émis. Payez directement depuis votre espace client.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4">
-                <div className="w-14 h-14 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  <Smartphone className="w-7 h-7 text-blue-600" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-3">Paiement en un clic</h3>
-                  <p className="text-gray-600 leading-relaxed text-lg">
-                    Vos véhicules et moyens de paiement sont enregistrés. 
-                    Payez vos FPS en quelques secondes, où que vous soyez.
+                    Ajoutez des collaborateurs à votre compte entreprise. Délégation des paiements 
+                    avec contrôle des autorisations et suivi des actions par utilisateur.
                   </p>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-xl p-6 border-2 border-green-200">
+            <div className="bg-white rounded-xl p-6 border-2 border-blue-200">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                  <CheckCircle className="w-5 h-5 text-green-600" />
+                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                  <Building2 className="w-5 h-5 text-blue-600" />
                 </div>
-                <span className="font-semibold text-green-900 text-lg">Service 100% gratuit</span>
+                <span className="font-semibold text-blue-900 text-lg">Solution entreprise dédiée</span>
               </div>
-              <p className="text-green-700">
-                La création de compte et l'enregistrement de vos véhicules sont entièrement gratuits. 
-                Aucun abonnement, aucun frais cachés. Vous ne payez que vos FPS.
+              <p className="text-blue-700">
+                Tarification adaptée aux entreprises avec facturation centralisée. 
+                Surveillance illimitée de véhicules avec votre numéro SIRET. Support dédié inclus.
               </p>
             </div>
           </div>
 
-          {/* Vehicle Management Preview */}
+          {/* Company Fleet Management Preview */}
           <div className="relative">
             <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
               <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-white">Mes véhicules</h3>
+                  <div className="flex items-center gap-3">
+                    <Building2 className="w-5 h-5 text-white" />
+                    <div>
+                      <h3 className="text-lg font-semibold text-white">Flotte Entreprise</h3>
+                      <p className="text-blue-100 text-sm">SIRET: 123 456 789 00012</p>
+                    </div>
+                  </div>
                   <button className="bg-white bg-opacity-20 text-white px-3 py-1 rounded-lg text-sm font-medium flex items-center gap-2">
                     <Plus className="w-4 h-4" />
                     Ajouter
@@ -122,7 +140,7 @@ export default function VehicleRegistration({ onNavigate }: VehicleRegistrationP
               </div>
 
               <div className="p-6 space-y-4">
-                {vehicles.map((vehicle, index) => (
+                {companyVehicles.map((vehicle, index) => (
                   <div key={vehicle.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                     <div className="flex items-center gap-4">
                       <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
@@ -131,7 +149,7 @@ export default function VehicleRegistration({ onNavigate }: VehicleRegistrationP
                       <div>
                         <div className="flex items-center gap-2">
                           <p className="font-semibold text-gray-900">{vehicle.licensePlate}</p>
-                          <span className="bg-green-100 text-green-800 px-2 py-1 text-xs font-medium rounded-full flex items-center gap-1">
+                          <span className="bg-blue-100 text-blue-800 px-2 py-1 text-xs font-medium rounded-full flex items-center gap-1">
                             <Bell className="w-3 h-3" />
                             Surveillé
                           </span>
@@ -150,25 +168,41 @@ export default function VehicleRegistration({ onNavigate }: VehicleRegistrationP
                   </div>
                 ))}
 
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <BarChart3 className="w-5 h-5 text-blue-600" />
+                      <div>
+                        <p className="font-medium text-blue-900">Statistiques de flotte</p>
+                        <p className="text-sm text-blue-700">{companyVehicles.length} véhicules • {companyVehicles.reduce((sum, v) => sum + v.totalFPS, 0)} FPS détectés</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-lg font-bold text-blue-900">245€</p>
+                      <p className="text-xs text-blue-600">Total ce mois</p>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
                   <Car className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                  <p className="text-gray-500 text-sm">Ajoutez vos véhicules pour activer la surveillance</p>
+                  <p className="text-gray-500 text-sm">Ajoutez les véhicules de votre entreprise</p>
                 </div>
               </div>
 
               <div className="bg-blue-50 px-6 py-4 border-t border-blue-100">
                 <div className="flex items-center gap-2 text-sm text-blue-700">
                   <Shield className="w-4 h-4" />
-                  <span>Surveillance 24h/24 • Notifications instantanées • Paiement facilité</span>
+                  <span>Surveillance 24h/24 • Gestion centralisée • Facturation entreprise</span>
                 </div>
               </div>
             </div>
 
-            {/* Floating notification example */}
+            {/* Floating notification example for company */}
             <div className="absolute -top-4 -right-4 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg animate-pulse">
               <div className="flex items-center gap-2 text-sm font-medium">
                 <Bell className="w-4 h-4" />
-                Nouveau FPS détecté !
+                3 nouveaux FPS détectés !
               </div>
             </div>
           </div>
@@ -179,29 +213,52 @@ export default function VehicleRegistration({ onNavigate }: VehicleRegistrationP
           <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200 max-w-2xl mx-auto">
             <div className="space-y-6">
               <div className="text-center">
-                <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <User className="w-8 h-8 text-white" />
+                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Building2 className="w-8 h-8 text-white" />
                 </div>
                 <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                  Rejoignez plus de 10 000 utilisateurs
+                  Rejoignez plus de 500 entreprises
                 </h3>
                 <p className="text-gray-600 mb-6 text-lg">
-                  Qui ont simplifié la gestion de leurs FPS avec Zenia
+                  Qui ont simplifié la gestion des FPS de leur flotte avec Zenia
                 </p>
+              </div>
+
+              {/* Company Registration Form Preview */}
+              <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+                <h4 className="font-semibold text-gray-900 mb-4 text-left">Informations entreprise requises :</h4>
+                <div className="space-y-3 text-left">
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    <span className="text-gray-700">Raison sociale de l'entreprise</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    <span className="text-gray-700">Numéro SIRET (obligatoire pour la surveillance)</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    <span className="text-gray-700">Adresse du siège social</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    <span className="text-gray-700">Contact administrateur (email + téléphone)</span>
+                  </div>
+                </div>
               </div>
 
               <div className="grid sm:grid-cols-2 gap-4">
                 <button 
                   onClick={() => onNavigate('register')}
-                  className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white py-4 px-6 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
+                  className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white py-4 px-6 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
                 >
-                  <User className="w-5 h-5" />
-                  Créer mon compte
+                  <Building2 className="w-5 h-5" />
+                  Créer un compte entreprise
                 </button>
                 
                 <button 
                   onClick={() => onNavigate('login')}
-                  className="border-2 border-indigo-200 text-indigo-700 hover:bg-indigo-50 py-4 px-6 rounded-xl font-semibold transition-all duration-200"
+                  className="border-2 border-blue-200 text-blue-700 hover:bg-blue-50 py-4 px-6 rounded-xl font-semibold transition-all duration-200"
                 >
                   J'ai déjà un compte
                 </button>
@@ -210,15 +267,15 @@ export default function VehicleRegistration({ onNavigate }: VehicleRegistrationP
               <div className="flex items-center justify-center gap-6 text-sm text-gray-500">
                 <span className="flex items-center gap-1">
                   <CheckCircle className="w-4 h-4 text-green-500" />
-                  Gratuit
+                  SIRET vérifié
                 </span>
                 <span className="flex items-center gap-1">
                   <CheckCircle className="w-4 h-4 text-green-500" />
-                  Sans engagement
+                  Facturation centralisée
                 </span>
                 <span className="flex items-center gap-1">
                   <CheckCircle className="w-4 h-4 text-green-500" />
-                  Sécurisé
+                  Support dédié
                 </span>
               </div>
             </div>
